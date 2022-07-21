@@ -89,9 +89,11 @@ func NewEstuary(appVersion string) *Estuary {
 		},
 
 		Node: Node{
-			AnnounceAddrs: []string{},
+			AnnounceAddrs: []string{
+				"/ip4/127.0.0.1/tcp/0",
+			},
 			ListenAddrs: []string{
-				"/ip4/0.0.0.0/tcp/6744",
+				"/ip4/127.0.0.1/tcp/0",
 			},
 			PeeringPeers:      []peering.PeeringPeer{},
 			WriteLogDir:       "",

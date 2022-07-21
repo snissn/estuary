@@ -10,10 +10,16 @@ import (
 	"strconv"
 	"time"
 
+	bdb "github.com/application-research/estuary/boost/db"
+	"github.com/application-research/estuary/boost/storagemanager"
+	"github.com/application-research/estuary/boost/storagemarket/logs"
+	"github.com/application-research/estuary/boost/transport/httptransport"
 	"github.com/application-research/estuary/node/modules/peering"
+	"github.com/filecoin-project/lotus/node/repo"
 
 	"go.opencensus.io/stats/view"
 
+	"github.com/application-research/estuary/boost/storagemarket"
 	"github.com/application-research/estuary/build"
 	"github.com/application-research/estuary/config"
 	drpc "github.com/application-research/estuary/drpc"
@@ -28,6 +34,8 @@ import (
 	"github.com/ipfs/go-cid"
 	gsimpl "github.com/ipfs/go-graphsync/impl"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 	routed "github.com/libp2p/go-libp2p/p2p/host/routed"
 	"github.com/mitchellh/go-homedir"
 	"github.com/multiformats/go-multiaddr"
@@ -174,6 +182,11 @@ func before(cctx *cli.Context) error {
 	_ = logging.SetLogLevel("bs-wal", level)
 	_ = logging.SetLogLevel("provider.batched", level)
 	_ = logging.SetLogLevel("bs-migrate", level)
+
+	_ = logging.SetLogLevel("libp2p-server", "debug")
+	_ = logging.SetLogLevel("storagemanager", "debug")
+	_ = logging.SetLogLevel("boost-provider", "debug")
+	_ = logging.SetLogLevel("boost-storage-deal", "debug")
 	return nil
 }
 
@@ -218,8 +231,8 @@ func overrideSetOptions(flags []cli.Flag, cctx *cli.Context, cfg *config.Estuary
 			}
 			cfg.Node.AnnounceAddrs = []string{cctx.String("announce")}
 		case "peering-peers":
-			//	The peer is an array of multiaddress so we need to allow
-			//	the user to specify ID and Addrs
+			//  The peer is an array of multiaddress so we need to allow
+			//  the user to specify ID and Addrs
 			var peers []peering.PeeringPeer
 			peeringPeersStr := cctx.String("peering-peers")
 
@@ -638,7 +651,54 @@ func main() {
 			}
 		}()
 
-		cm, err := NewContentManager(db, api, fc, init.trackingBstore, nd.NotifBlockstore, nd.Provider, pinmgr, nd, cfg)
+		sdb, err := bdb.SqlDB(cfg.DatabaseConnString)
+		if err != nil {
+			return err
+		}
+
+		cma, err := multiaddr.NewMultiaddr("/ip4/127.0.0.1/tcp/0")
+		if err != nil {
+			return err
+		}
+
+		clh, err := libp2p.New(libp2p.ListenAddrs(cma))
+		if err != nil {
+			return err
+		}
+
+		clh.Peerstore().AddAddrs(nd.Host.ID(), nd.Host.Addrs(), peerstore.PermanentAddrTTL)
+
+		dlDB := bdb.NewDealsDB(sdb)
+		logsDB := bdb.NewLogsDB(sdb)
+		dl := logs.NewDealLogger(logsDB)
+		tspt := httptransport.New(clh, dl)
+
+		stm := storagemanager.New(storagemanager.Config{MaxStagingDealsBytes: 10000000000})
+
+		fsRepo, err := repo.NewFS(os.TempDir())
+		if err != nil {
+			return err
+		}
+		lr, err := fsRepo.Lock(repo.StorageMiner)
+		if err != nil {
+			return err
+		}
+
+		sm, err := stm(lr, sdb)
+		if err != nil {
+			return err
+		}
+
+		prov, err := storagemarket.NewProvider(sdb, dlDB, sm, sdb, dl, tspt)
+		if err != nil {
+			return err
+		}
+
+		if err = prov.Start(); err != nil {
+			return err
+		}
+
+		cm, err := NewContentManager(db, api, fc, init.trackingBstore, nd.NotifBlockstore, nd.Provider, pinmgr, nd, cfg, prov)
 		if err != nil {
 			return err
 		}

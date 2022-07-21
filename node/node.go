@@ -61,7 +61,7 @@ var peeringPeers = []peering.PeeringPeer{
 	//Cloudflare
 	{ID: "QmcfgsJsMtx6qJb74akCw1M24X1zFwgGo11h1cuhwQjtJP", Addrs: []string{"/ip6/2606:4700:60::6/tcp/4009", "/ip4/172.65.0.13/tcp/4009"}},
 
-	//	NFT storage
+	//  NFT storage
 	{ID: "12D3KooWEGeZ19Q79NdzS6CJBoCwFZwujqi5hoK8BtRcLa48fJdu", Addrs: []string{"/ip4/145.40.96.233/tcp/4001"}},
 	{ID: "12D3KooWBnmsaeNRP6SCdNbhzaNHihQQBPDhmDvjVGsR1EbswncV", Addrs: []string{"/ip4/147.75.87.85/tcp/4001"}},
 	{ID: "12D3KooWDLYiAdzUdM7iJHhWu5KjmCN62aWd7brQEQGRWbv8QcVb", Addrs: []string{"/ip4/136.144.57.203/tcp/4001"}},
@@ -78,7 +78,7 @@ var peeringPeers = []peering.PeeringPeer{
 	{ID: "12D3KooWJbARcvvEEF4AAqvAEaVYRkEUNPC3Rv3joebqfPh4LaKq", Addrs: []string{"/ip4/136.144.57.127/tcp/4001"}},
 	{ID: "12D3KooWNcshtC1XTbPxew2kq3utG2rRGLeMN8y5vSfAMTJMV7fE", Addrs: []string{"/ip4/147.75.87.249/tcp/4001"}},
 
-	// 	Pinata
+	//  Pinata
 	{ID: "QmWaik1eJcGHq1ybTWe7sezRfqKNcDRNkeBaLnGwQJz1Cj", Addrs: []string{"/dnsaddr/fra1-1.hostnodes.pinata.cloud"}},
 	{ID: "QmNfpLrQQZr5Ns9FAJKpyzgnDL2GgC6xBug1yUZozKFgu4", Addrs: []string{"/dnsaddr/fra1-2.hostnodes.pinata.cloud"}},
 	{ID: "QmPo1ygpngghu5it8u4Mr3ym6SEU2Wp2wA66Z91Y1S1g29", Addrs: []string{"/dnsaddr/fra1-3.hostnodes.pinata.cloud"}},
@@ -86,7 +86,7 @@ var peeringPeers = []peering.PeeringPeer{
 	{ID: "QmPySsdmbczdZYBpbi2oq2WMJ8ErbfxtkG8Mo192UHkfGP", Addrs: []string{"/dnsaddr/nyc1-2.hostnodes.pinata.cloud"}},
 	{ID: "QmSarArpxemsPESa6FNkmuu9iSE1QWqPX2R3Aw6f5jq4D5", Addrs: []string{"/dnsaddr/nyc1-3.hostnodes.pinata.cloud"}},
 
-	//	Protocol Labs
+	//  Protocol Labs
 	{ID: "QmUEMvxS2e7iDrereVYc5SWPauXPyNwxcy9BXZrC1QTcHE", Addrs: []string{"/dns/cluster0.fsn.dwebops.pub"}},
 	{ID: "QmNSYxZAiJHeLdkBg38roksAR9So7Y5eojks1yjEcUtZ7i", Addrs: []string{"/dns/cluster1.fsn.dwebops.pub"}},
 	{ID: "QmUd6zHcbkbcs7SMxwLs48qZVX3vpcM8errYS7xEczwRMA", Addrs: []string{"/dns/cluster2.fsn.dwebops.pub"}},
@@ -96,10 +96,10 @@ var peeringPeers = []peering.PeeringPeer{
 	{ID: "12D3KooWQtpvNvUYFzAo1cRYkydgk15JrMSHp6B6oujqgYSnvsVm", Addrs: []string{"/dns4/nft-storage-dc13.nft.dwebops.net/tcp/18402"}},
 	{ID: "12D3KooWQcgCwNCTYkyLXXQSZuL5ry1TzpM8PRe9dKddfsk1BxXZ", Addrs: []string{"/dns4/nft-storage-sv15.nft.dwebops.net/tcp/18402"}},
 
-	//	Textile
+	//  Textile
 	{ID: "QmR69wtWUMm1TWnmuD4JqC1TWLZcc8iR2KrTenfZZbiztd", Addrs: []string{"/ip4/104.210.43.77"}},
 
-	//	Web3.Storage
+	//  Web3.Storage
 	{ID: "12D3KooWR19qPPiZH4khepNjS3CLXiB7AbrbAD4ZcDjN1UjGUNE1", Addrs: []string{"/ip4/139.178.69.155/tcp/4001"}},
 	{ID: "12D3KooWEDMw7oRqQkdCJbyeqS5mUmWGwTp8JJ2tjCzTkHboF6wK", Addrs: []string{"/ip4/139.178.68.91/tcp/4001"}},
 	{ID: "12D3KooWPySxxWQjBgX9Jp6uAHQfVmdq8HG1gVvS1fRawHNSrmqW", Addrs: []string{"/ip4/147.75.33.191/tcp/4001"}},
@@ -107,7 +107,7 @@ var peeringPeers = []peering.PeeringPeer{
 	{ID: "12D3KooWSnniGsyAF663gvHdqhyfJMCjWJv54cGSzcPiEMAfanvU", Addrs: []string{"/ip4/145.40.89.195/tcp/4001"}},
 	{ID: "12D3KooWKytRAd2ujxhGzaLHKJuje8sVrHXvjGNvHXovpar5KaKQ", Addrs: []string{"/ip4/136.144.56.153/tcp/4001"}},
 
-	//	Estuary
+	//  Estuary
 	{ID: "12D3KooWCVXs8P7iq6ao4XhfAmKWrEeuKFWCJgqe9jGDMTqHYBjw", Addrs: []string{"/ip4/139.178.68.217/tcp/6744"}},
 	{ID: "12D3KooWGBWx9gyUFTVQcKMTenQMSyE2ad9m7c9fpjS4NMjoDien", Addrs: []string{"/ip4/147.75.49.71/tcp/6745"}},
 	{ID: "12D3KooWFrnuj5o3tx4fGD2ZVJRyDqTdzGnU3XYXmBbWbc8Hs8Nd", Addrs: []string{"/ip4/147.75.86.255/tcp/6745"}},
@@ -206,36 +206,37 @@ func Setup(ctx context.Context, init NodeInitializer) (*Node, error) {
 	}
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(cfg.ListenAddrs...),
-		libp2p.NATPortMap(),
+		libp2p.DisableRelay(),
+		// libp2p.NATPortMap(),
 		libp2p.ConnectionManager(cmgr),
 		libp2p.Identity(peerkey),
 		libp2p.BandwidthReporter(bwc),
-		libp2p.DefaultTransports,
+		// libp2p.DefaultTransports,
 		libp2p.ResourceManager(rcm),
 	}
 
-	if len(cfg.AnnounceAddrs) > 0 {
-		var addrs []multiaddr.Multiaddr
-		for _, anna := range cfg.AnnounceAddrs {
-			a, err := multiaddr.NewMultiaddr(anna)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse announce addr: %w", err)
-			}
-			addrs = append(addrs, a)
-		}
-		opts = append(opts, libp2p.AddrsFactory(func([]multiaddr.Multiaddr) []multiaddr.Multiaddr {
-			return addrs
-		}))
-	}
+	// if len(cfg.AnnounceAddrs) > 0 {
+	//  var addrs []multiaddr.Multiaddr
+	//  for _, anna := range cfg.AnnounceAddrs {
+	//      a, err := multiaddr.NewMultiaddr(anna)
+	//      if err != nil {
+	//          return nil, fmt.Errorf("failed to parse announce addr: %w", err)
+	//      }
+	//      addrs = append(addrs, a)
+	//  }
+	//  opts = append(opts, libp2p.AddrsFactory(func([]multiaddr.Multiaddr) []multiaddr.Multiaddr {
+	//      return addrs
+	//  }))
+	// }
 
 	h, err := libp2p.New(opts...)
 
-	//	peering service
+	//  peering service
 	peerServ := peering.NewEstuaryPeeringService(h)
 
 	peeringPeerList := append(cfg.PeeringPeers, peeringPeers...)
 
-	//	add the peers
+	//  add the peers
 	for _, addrInfo := range peeringPeerList {
 		addrs, err := toMultiAddresses(addrInfo.Addrs)
 		if err != nil {

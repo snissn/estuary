@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"container/heap"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sort"
 	"sync"
 	"time"
 
+	stgm "github.com/application-research/estuary/boost/storagemarket"
+	stgm_types "github.com/application-research/estuary/boost/storagemarket/types"
+	boosttypes "github.com/application-research/estuary/boost/transport/types"
 	"github.com/application-research/estuary/config"
 	drpc "github.com/application-research/estuary/drpc"
 	"github.com/application-research/estuary/node"
@@ -25,9 +29,11 @@ import (
 	"github.com/filecoin-project/go-fil-markets/storagemarket/network"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/big"
+	mkt "github.com/filecoin-project/go-state-types/builtin/v8/market"
 	"github.com/filecoin-project/lotus/api"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/specs-actors/v6/actors/builtin/market"
+
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru"
 	blocks "github.com/ipfs/go-block-format"
@@ -123,6 +129,8 @@ type ContentManager struct {
 	DisableFilecoinStorage bool
 
 	IncomingRPCMessages chan *drpc.Message
+
+	prv *stgm.Provider
 }
 
 func (cm *ContentManager) isInflight(c cid.Cid) bool {
@@ -306,7 +314,7 @@ func (cb *contentStagingZone) hasContent(c Content) bool {
 	return false
 }
 
-func NewContentManager(db *gorm.DB, api api.Gateway, fc *filclient.FilClient, tbs *TrackingBlockstore, nbs *node.NotifyBlockstore, prov *batched.BatchProvidingSystem, pinmgr *pinner.PinManager, nd *node.Node, cfg *config.Estuary) (*ContentManager, error) {
+func NewContentManager(db *gorm.DB, api api.Gateway, fc *filclient.FilClient, tbs *TrackingBlockstore, nbs *node.NotifyBlockstore, prov *batched.BatchProvidingSystem, pinmgr *pinner.PinManager, nd *node.Node, cfg *config.Estuary, prv *stgm.Provider) (*ContentManager, error) {
 	cache, err := lru.NewARC(50000)
 	if err != nil {
 		return nil, err
@@ -341,6 +349,7 @@ func NewContentManager(db *gorm.DB, api api.Gateway, fc *filclient.FilClient, tb
 		tracer:                     otel.Tracer("replicator"),
 		DisableFilecoinStorage:     cfg.DisableFilecoinStorage,
 		IncomingRPCMessages:        make(chan *drpc.Message),
+		prv:                        prv,
 	}
 	qm := newQueueManager(func(c uint) {
 		cm.ToCheck <- c
@@ -1287,16 +1296,16 @@ func (cm *ContentManager) ensureStorage(ctx context.Context, content Content, do
 		return err
 	}
 
-	if len(deals) == 0 &&
-		content.Size < int64(individualDealThreshold) &&
-		!content.Aggregate &&
-		bucketingEnabled {
-		// Put it in a bucket!
-		if err := cm.addContentToStagingZone(ctx, content); err != nil {
-			return err
-		}
-		return nil
-	}
+	// if len(deals) == 0 &&
+	// 	content.Size < int64(individualDealThreshold) &&
+	// 	!content.Aggregate &&
+	// 	bucketingEnabled {
+	// 	// Put it in a bucket!
+	// 	if err := cm.addContentToStagingZone(ctx, content); err != nil {
+	// 		return err
+	// 	}
+	// 	return nil
+	// }
 
 	replicationFactor := cm.Replication
 	if content.Replication > 0 {
@@ -2139,6 +2148,74 @@ func (cm *ContentManager) makeDealsForContent(ctx context.Context, content Conte
 		if err := cm.DB.Create(cd).Error; err != nil {
 			return xerrors.Errorf("failed to create database entry for deal: %w", err)
 		}
+
+		addrstr := cm.Node.Config.AnnounceAddrs[0] + "/p2p/" + cm.Node.Host.ID().String()
+		announceAddr, err := multiaddr.NewMultiaddr(addrstr)
+		if err != nil {
+			return xerrors.Errorf("cannot parse announce address '%s': %w", addrstr, err)
+		}
+
+		authToken, err := httptransport.GenerateAuthToken()
+		if err != nil {
+			return xerrors.Errorf("generating auth token for deal: %w", err)
+		}
+
+		// Add an auth token for the data to the auth DB
+		err = cm.FilClient.Libp2pTransferMgr.PrepareForDataRequest(ctx, cd.ID, authToken, propnd.Cid(), p.Piece.Root, p.Piece.RawBlockSize)
+		if err != nil {
+			return xerrors.Errorf("preparing for data request: %w", err)
+		}
+
+		transferParams, err := json.Marshal(boosttypes.HttpRequest{
+			URL: "libp2p://" + announceAddr.String(),
+			Headers: map[string]string{
+				"Authorization": httptransport.BasicAuthHeader("", authToken),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("wahalla number 1 params: %w", err)
+		}
+
+		dlabel, err := mkt.NewLabelFromString(p.DealProposal.Proposal.Label)
+		if err != nil {
+			return fmt.Errorf("wahalla number 2 params: %w", err)
+		}
+
+		params := &stgm_types.DealParams{
+			DealUUID: dealUUID,
+			ClientDealProposal: mkt.ClientDealProposal{
+				Proposal: mkt.DealProposal{
+					PieceCID:             p.DealProposal.Proposal.PieceCID,
+					PieceSize:            p.DealProposal.Proposal.PieceSize,
+					VerifiedDeal:         p.DealProposal.Proposal.VerifiedDeal,
+					Client:               p.DealProposal.Proposal.Client,
+					Provider:             p.DealProposal.Proposal.Provider,
+					StartEpoch:           p.DealProposal.Proposal.StartEpoch,
+					EndEpoch:             p.DealProposal.Proposal.EndEpoch,
+					Label:                dlabel,
+					StoragePricePerEpoch: p.DealProposal.Proposal.StoragePricePerEpoch,
+					ProviderCollateral:   p.DealProposal.Proposal.ProviderCollateral,
+					ClientCollateral:     p.DealProposal.Proposal.ClientCollateral,
+				},
+				ClientSignature: p.DealProposal.ClientSignature,
+			},
+			DealDataRoot: p.Piece.Root,
+			Transfer: stgm_types.Transfer{
+				Type:     "libp2p",
+				ClientID: fmt.Sprintf("%d", cd.ID),
+				Params:   transferParams,
+				Size:     p.Piece.RawBlockSize,
+			},
+		}
+
+		c, err := cm.prv.ExecuteDeal(params, cm.Node.Host.ID())
+		if err != nil {
+			return xerrors.Errorf("wahalla: %s", dealUUID)
+		}
+
+		log.Infof("response: %v, reason: %v", c.Accepted, c.Reason)
+		log.Info("sleeepping!!!!!!!!!!!!!!!!!")
+		time.Sleep(time.Hour * 24)
 
 		// Send the deal proposal to the storage provider
 		var cleanupDealPrep func() error
