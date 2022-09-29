@@ -33,7 +33,7 @@ jobs:
             git config --global user.name "Build Bot"
 
             git commit -am "Commit from build bot. Build number $CIRCLE_BUILD_NUM. Workflow ID $CIRCLE_WORKFLOW_ID."
-            #git push origin main
+            git push origin main
 
 
 # Invoke jobs via workflows
