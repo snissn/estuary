@@ -1,0 +1,44 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  say-hello:
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      #- image: cimg/base:stable
+      - image: swaggerapi/swagger-codegen-cli
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "82:ab:93:63:6a:d5:c4:80:fe:cb:e1:3c:cd:6c:17:79"
+      - checkout
+      - run:
+          name: "Say hello"
+          command: |
+            find | grep swagger
+            apk add git
+            apk add openssh
+            git clone git@github.com:snissn/estuary-swagger-clients.git
+            cd estuary-swagger-clients
+            sh build_all.sh
+            git status 
+            git add * 
+            git config --global user.email "BuildBot@estuary-swagger-client.net"
+            git config --global user.name "Build Bot"
+
+            git commit -am "Commit from build bot. Build number $CIRCLE_BUILD_NUM. Workflow ID $CIRCLE_WORKFLOW_ID."
+            #git push origin main
+
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  say-hello-workflow:
+    jobs:
+      - say-hello
