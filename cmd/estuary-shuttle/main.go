@@ -65,7 +65,10 @@ import (
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipfs/go-merkledag"
+	dag "github.com/ipfs/go-merkledag"
 	"github.com/ipfs/go-metrics-interface"
+	"github.com/ipfs/go-mfs"
+	ft "github.com/ipfs/go-unixfs"
 	uio "github.com/ipfs/go-unixfs/io"
 	"github.com/ipld/go-car"
 	"github.com/labstack/echo/v4"
@@ -1050,6 +1053,8 @@ func (s *Shuttle) ServeAPI() error {
 
 	e.Use(middleware.CORS())
 
+	e.GET("/makeipfsdir", s.handleipfsdir)
+
 	e.GET("/health", s.handleHealth)
 	e.GET("/net/addrs", s.handleGetNetAddress)
 	e.GET("/viewer", withUser(s.handleGetViewer), s.AuthRequired(util.PermLevelUser))
@@ -1814,11 +1819,54 @@ func (s *Shuttle) getUpdatePacket() (*drpc.ShuttleUpdate, error) {
 
 	return &upd, nil
 }
-
 func (s *Shuttle) handleHealth(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "ok",
 	})
+}
+
+// handleipfsdir godoc
+// @Summary      Make IPFS Directory for reasons like website hosting
+// @Description  Work in progress -- currently makes a demo folder using three predetermined cids to make a website
+// @Tags         content
+// @Produce      json
+// @Success      200  {array}  string
+// @Router       /makeipfsdir [get]
+func (s *Shuttle) handleipfsdir(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	bserv := blockservice.New(s.Node.Blockstore, s.Node.Bitswap)
+	dserv := merkledag.NewDAGService(bserv)
+
+	cid_a, _ := cid.Decode("QmQq3PygxpvxoevrMJcRjiVRryCpM4ec15URdW5ejMJy18") //todo collection from post data or from a collection
+	cid_b, _ := cid.Decode("QmdxnTB4m4F8mnG1LaePegtubWzXrDh1v5YhUTPxwfcTos") //todo collection from post data or from a collection
+	cid_c, _ := cid.Decode("QmfJpPKXkcySKyXj9qHGxPqwqDDZSyQYHFKvi4m5ssLMra") //todo collection from post data or from a collection
+	root := emptyDirNode()
+	mfsroot, _ := mfs.NewRoot(ctx, dserv, root, func(ctx context.Context, c cid.Cid) error {
+		fmt.Println("PUBLISHED: ", ctx)
+		return nil
+	})
+
+	nodetoadda, _ := dserv.Get(ctx, cid_a)
+	nodetoaddb, _ := dserv.Get(ctx, cid_b)
+	nodetoaddc, _ := dserv.Get(ctx, cid_c)
+	mfs.PutNode(mfsroot, "/index.html", nodetoadda)
+	mfs.PutNode(mfsroot, "/sp.css", nodetoaddb)
+	mfs.PutNode(mfsroot, "/image.png", nodetoaddc)
+	node, _ := mfsroot.GetDirectory().GetNode()
+
+	fmt.Println(node.Cid().String())
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"cid": node.Cid().String(),
+	})
+	//return c.JSON(http.StatusOK, map[string]interface{}{
+	//"cid":        node.Cid().String()
+	//})
+}
+
+func emptyDirNode() *dag.ProtoNode {
+	return dag.NodeWithData(ft.FolderPBData())
 }
 
 // handleGetNetAddress godoc
